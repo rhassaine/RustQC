@@ -10,7 +10,7 @@ use std::path::Path;
 
 use anyhow::{bail, ensure, Context, Result};
 use log::debug;
-use rust_htslib::bam::{self, Read as BamRead};
+use crate::rna::bam::{self, Read as BamRead};
 
 use crate::rna::bam_flags::{BAM_FMUNMAP, BAM_FQCFAIL, BAM_FUNMAP};
 
@@ -371,7 +371,7 @@ pub fn write_split_bams(
     reference: Option<&str>,
     regions: &SplitBamRegions,
     prefix: &Path,
-    threads: usize,
+    _threads: usize,
 ) -> Result<SplitBamCounts> {
     let mut reader = bam::Reader::from_path(bam_path)
         .with_context(|| format!("Failed to open alignment file: {bam_path}"))?;
@@ -380,34 +380,18 @@ pub fn write_split_bams(
             .set_reference(ref_path)
             .with_context(|| format!("Failed to set reference FASTA: {ref_path}"))?;
     }
-    let pool = if threads > 1 {
-        let pool = rust_htslib::tpool::ThreadPool::new(threads as u32)
-            .context("Failed to create htslib thread pool")?;
-        reader
-            .set_thread_pool(&pool)
-            .context("Failed to attach thread pool to reader")?;
-        Some(pool)
-    } else {
-        None
-    };
-
     let header_view = reader.header().clone();
     let target_names: Vec<String> = (0..header_view.target_count())
         .map(|tid| String::from_utf8_lossy(header_view.tid2name(tid)).into_owned())
         .collect();
     let lookup = regions.lookup_for_targets(&target_names);
-    let header = bam::Header::from_template(&header_view);
+    let header = header_view.clone();
 
     let prefix = prefix.to_string_lossy();
     let open = |suffix: &str| -> Result<bam::Writer> {
         let path = format!("{prefix}.{suffix}.bam");
-        let mut writer = bam::Writer::from_path(&path, &header, bam::Format::Bam)
+        let writer = bam::Writer::from_path(Path::new(&path), &header, bam::Format::Bam)
             .with_context(|| format!("Failed to create {path}"))?;
-        if let Some(ref pool) = pool {
-            writer
-                .set_thread_pool(pool)
-                .context("Failed to attach thread pool to writer")?;
-        }
         Ok(writer)
     };
     let mut in_writer = open("in")?;

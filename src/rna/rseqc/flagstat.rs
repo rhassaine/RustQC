@@ -420,7 +420,7 @@ mod tests {
     const PLACEMENTS: [(i32, i32, u8); 3] = [(0, 0, 60), (0, 1, 60), (1, 0, 3)];
 
     fn record(flag: u16, (tid, mtid, mapq): (i32, i32, u8)) -> bam::Record {
-        use rust_htslib::bam::record::{Cigar, CigarString};
+        use crate::rna::bam::record::{Cigar, CigarString};
         let mut rec = bam::Record::new();
         rec.set(
             b"r",

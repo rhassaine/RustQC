@@ -545,7 +545,7 @@ impl BamStatAccum {
         }
 
         // Primary-read totals kept for the library API (`BamStatResult`).
-        let seq_len = record.seq_len();
+        let seq_len = record.seq_len() as usize;
         if is_primary {
             self.primary_count += 1;
             if is_dup {
@@ -640,7 +640,7 @@ impl BamStatAccum {
     /// Follows `collect_stats` in samtools `stats.c` (1.22.1) with default
     /// options: no flag filters, no reference, coordinate-sorted input.
     fn process_stats_read(&mut self, record: &bam::Record, flags: u16, seq_len: usize) {
-        use rust_htslib::bam::record::Cigar as C;
+        use crate::rna::bam::record::Cigar as C;
 
         let is_primary = flags & BAM_FSUPPLEMENTARY == 0;
         let is_unmapped = flags & BAM_FUNMAP != 0;
@@ -703,7 +703,7 @@ impl BamStatAccum {
         // Both mates are counted; output halves the counts.
         if is_primary && is_paired && !mate_unmapped {
             let mtid = record.mtid();
-            let isize = record.insert_size().unsigned_abs().min(MAX_INSERT_SIZE);
+            let isize = i64::from(record.insert_size()).unsigned_abs().min(MAX_INSERT_SIZE);
             if isize > 0 || tid == mtid {
                 let pos_fst = record.mpos() - pos;
                 let is_fst: i64 = if flags & BAM_FREAD1 != 0 { 1 } else { -1 };
@@ -945,12 +945,12 @@ impl BamStatAccum {
     /// read-oriented cycle (IC) of a mapped, non-secondary record.
     fn count_indels(
         &mut self,
-        cigar: &rust_htslib::bam::record::CigarStringView,
+        cigar: &crate::rna::bam::record::CigarStringView,
         is_reverse: bool,
         order: u8,
         seq_len: usize,
     ) {
-        use rust_htslib::bam::record::Cigar as C;
+        use crate::rna::bam::record::Cigar as C;
 
         let read_len = seq_len as i64;
         let mut icycle: i64 = 0;

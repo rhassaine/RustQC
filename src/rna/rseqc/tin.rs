@@ -4,7 +4,7 @@
 //! uniformity across sampled exonic positions. Reimplementation of
 //! RSeQC's `tin.py` tool.
 
-use rust_htslib::bam;
+use crate::rna::bam;
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet};
 use std::hash::{BuildHasher, Hasher};
@@ -1276,7 +1276,7 @@ impl TinAccum {
             frontier,
             candidate: flags & 0x8 == 0
                 && !(mtid >= 0 && mtid != record.tid())
-                && !(record.insert_size().unsigned_abs() >= 2 * record.seq_len() as u64
+                && !(i64::from(record.insert_size()).unsigned_abs() >= 2 * record.seq_len() as u64
                     && mpos >= read_end as i64),
             insertable: mpos >= record.pos() || (is_paired && mpos == -1),
             silent_below,
@@ -1309,6 +1309,7 @@ impl TinAccum {
                 };
                 // Rewrite both reads' qualities as htslib does, then move each
                 // affected base's count in the transcripts where they pair.
+                let raw_cigar = record.raw_cigar();
                 let mut a_qual = first.qual.clone();
                 let mut b_qual = quals.to_vec();
                 tweak_overlap_quality(
@@ -1320,8 +1321,8 @@ impl TinAccum {
                     },
                     &mut MateView {
                         pos: record.pos(),
-                        cigar: record.raw_cigar(),
-                        seq: record.seq().encoded,
+                        cigar: &raw_cigar,
+                        seq: record.seq().encoded_bytes(),
                         qual: &mut b_qual,
                     },
                     qname,
@@ -1361,8 +1362,8 @@ impl TinAccum {
         if store {
             if let Some(last) = group.recs.last_mut() {
                 last.data = Some(Box::new(MateData {
-                    cigar: record.raw_cigar().to_vec(),
-                    seq: record.seq().encoded.to_vec(),
+                    cigar: record.raw_cigar(),
+                    seq: record.seq().encoded_bytes().to_vec(),
                     qual: quals.to_vec(),
                     bases: self.covered_buf.clone(),
                 }));
@@ -1502,7 +1503,7 @@ struct AlignedBlock {
 /// The reference end of the alignment (0-based, exclusive), including
 /// deletions and skipped regions.
 fn fill_aligned_blocks(record: &bam::Record, buf: &mut Vec<AlignedBlock>) -> u64 {
-    use rust_htslib::bam::record::Cigar;
+    use crate::rna::bam::record::Cigar;
 
     buf.clear();
     let mut pos = record.pos().max(0) as u64;

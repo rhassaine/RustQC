@@ -1015,7 +1015,7 @@ fn process_single_bam(
     // Reference names + lengths from the alignment header (samtools-style
     // outputs, junction_annotation, and the split_bam target lookup)
     let bam_header_refs = {
-        let reader = rust_htslib::bam::Reader::from_path(bam_path)
+        let reader = rustqc::rna::bam::Reader::from_path(bam_path)
             .with_context(|| format!("Failed to open BAM for header: {}", bam_path))?;
         let header = reader.header();
         (0..header.target_count())

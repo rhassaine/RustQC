@@ -190,6 +190,28 @@ impl Record {
         self.inner.template_length()
     }
 
+    /// Packed BAM CIGAR (`len << 4 | op`), as htslib `bam_get_cigar` returns it.
+    pub fn raw_cigar(&self) -> Vec<u32> {
+        use super::cigar::Cigar as C;
+        self.cigar_cache
+            .iter()
+            .map(|op| {
+                let code = match op {
+                    C::Match(_) => 0,
+                    C::Ins(_) => 1,
+                    C::Del(_) => 2,
+                    C::RefSkip(_) => 3,
+                    C::SoftClip(_) => 4,
+                    C::HardClip(_) => 5,
+                    C::Pad(_) => 6,
+                    C::Equal(_) => 7,
+                    C::Diff(_) => 8,
+                };
+                (op.len() << 4) | code
+            })
+            .collect()
+    }
+
     pub fn cigar(&self) -> CigarStringView {
         CigarStringView::from_ops(self.cigar_cache.clone(), self.pos().max(0) as u64)
     }
