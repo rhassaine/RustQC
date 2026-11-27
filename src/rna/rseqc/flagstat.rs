@@ -430,7 +430,13 @@ mod tests {
             );
         }
         let view = HeaderView::from_header(&header);
-        let rname = |t: i32| if t < 0 { "*".to_string() } else { format!("chr{t}") };
+        let rname = |t: i32| {
+            if t < 0 {
+                "*".to_string()
+            } else {
+                format!("chr{t}")
+            }
+        };
         let line = format!(
             "r\t{flag}\t{}\t10\t{mapq}\t4M\t{}\t10\t0\tACGT\tIIII",
             rname(tid),

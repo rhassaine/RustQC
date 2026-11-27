@@ -703,7 +703,9 @@ impl BamStatAccum {
         // Both mates are counted; output halves the counts.
         if is_primary && is_paired && !mate_unmapped {
             let mtid = record.mtid();
-            let isize = i64::from(record.insert_size()).unsigned_abs().min(MAX_INSERT_SIZE);
+            let isize = i64::from(record.insert_size())
+                .unsigned_abs()
+                .min(MAX_INSERT_SIZE);
             if isize > 0 || tid == mtid {
                 let pos_fst = record.mpos() - pos;
                 let is_fst: i64 = if flags & BAM_FREAD1 != 0 { 1 } else { -1 };

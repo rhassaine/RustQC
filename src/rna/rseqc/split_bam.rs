@@ -8,9 +8,9 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::path::Path;
 
+use crate::rna::bam::{self, Read as BamRead};
 use anyhow::{bail, ensure, Context, Result};
 use log::debug;
-use crate::rna::bam::{self, Read as BamRead};
 
 use crate::rna::bam_flags::{BAM_FMUNMAP, BAM_FQCFAIL, BAM_FUNMAP};
 
