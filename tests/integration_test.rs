@@ -1048,11 +1048,16 @@ fn run_split_bam(outdir: &Path, extra: &[&str]) -> std::process::Output {
 
 /// Read a BAM's header text and all records.
 fn read_bam(path: &Path) -> (Vec<u8>, Vec<bam::Record>) {
-    use rust_htslib::bam::Read;
+    use rustqc::rna::bam::Read;
     let mut reader = bam::Reader::from_path(path)
         .unwrap_or_else(|e| panic!("cannot open {}: {e}", path.display()));
-    let header = reader.header().as_bytes().to_vec();
-    let records = reader.records().map(|r| r.unwrap()).collect();
+    let header = format!("{:?}", reader.header().noodles_header()).into_bytes();
+    let mut records = Vec::new();
+    let mut rec = bam::Record::new();
+    while let Some(r) = reader.read(&mut rec) {
+        r.unwrap();
+        records.push(rec.clone());
+    }
     (header, records)
 }
 
@@ -1105,7 +1110,7 @@ fn test_split_bam_matches_rseqc() {
             );
             for (i, (g, e)) in got.iter().zip(expected.iter()).enumerate() {
                 assert!(
-                    g == e,
+                    format!("{g:?}") == format!("{e:?}"),
                     "{name} record {i} differs (-t {threads}): got {}, expected {}",
                     String::from_utf8_lossy(g.qname()),
                     String::from_utf8_lossy(e.qname())

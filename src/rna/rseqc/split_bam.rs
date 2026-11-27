@@ -519,7 +519,13 @@ mod tests {
         let sam = format!("@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:20000\n@SQ\tSN:chr2\tLN:20000\n{body}");
         let path = temp_file(name, &sam);
         let mut reader = bam::Reader::from_path(&path).unwrap();
-        reader.records().map(|r| r.unwrap()).collect()
+        let mut out = Vec::new();
+        let mut rec = bam::Record::new();
+        while let Some(r) = reader.read(&mut rec) {
+            r.unwrap();
+            out.push(rec.clone());
+        }
+        out
     }
 
     #[test]
